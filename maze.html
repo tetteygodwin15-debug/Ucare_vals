@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Maze Love Run</title>
+    <style>
+        * {
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #260250;
+            background-image: linear-gradient(135deg, #260250 0%, #ffb6c1 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: fixed;
+        }
+
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+            margin: 10px 0 5px 0;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        /* The Game Container */
+        #game-container {
+            position: relative;
+            background: #ee88aa;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            border: 3px solid #fff;
+            flex-shrink: 0;
+            max-width: 90vw;
+            max-height: 50vh;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 8px;
+            background-color: #fff0f5;
+            width: 100%;
+            height: auto;
+            max-width: 90vw;
+            max-height: 50vh;
+        }
+
+        /* Controls Area */
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Control Buttons - Optimized for touch */
+        .btn {
+            width: 60px;
+            height: 60px;
+            background-color: #decef0;
+            border: 2px solid #646464;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #0c0c0c;
+            flex-shrink: 0;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            position: relative;
+            padding: 0;
+            font-size: 0;
+        }
+
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 #0c0c0c;
+        }
+
+        .btn svg {
+            width: 28px;
+            height: 28px;
+            fill: #fff;
+            stroke: #5a0000;
+            stroke-width: 2;
+            pointer-events: none;
+        }
+
+        /* Popup Modal */
+        #popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(17, 17, 17, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        #popup.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .popup-content {
+            background: rgb(126, 126, 126);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 85vw;
+            width: 100%;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); }
+            to { transform: scale(1); }
+        }
+
+        .popup-content h2 {
+            color: #ff69b4;
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+        }
+
+        .popup-content p {
+            color: #dddddd;
+            margin: 0 0 20px 0;
+            font-size: 1.1rem;
+        }
+
+        .restart-btn {
+            background: #da1334;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #26c6da;
+        }
+        
+        .restart-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #26c6da;
+        }
+
+        /* Safe area support for notches */
+        @supports (padding: max(0px)) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+
+        /* Mobile landscape adjustment */
+        @media (max-height: 500px) {
+            h1 {
+                font-size: 1.3rem;
+                margin: 5px 0 3px 0;
+            }
+
+            #game-container {
+                padding: 5px;
+                max-height: 40vh;
+            }
+
+            .controls {
+                margin-top: 8px;
+                gap: 5px;
+            }
+
+            .btn {
+                width: 50px;
+                height: 50px;
+                border-radius: 10px;
+                box-shadow: 0 2px 0 #ff69b4;
+            }
+
+            .btn svg {
+                width: 22px;
+                height: 22px;
+            }
+        }
+
+/* Hearts Animation */
+#hearts {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.heart {
+    position: absolute;
+    color: rgb(99, 6, 248);
+    font-size: 16px;
+    animation: floatUp linear infinite;
+}
+
+@keyframes floatUp {
+    from {
+        transform: translateY(100vh) scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-10vh) scale(1.4);
+        opacity: 0;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <div id="hearts"></div>
+    <audio id="bgMusic" loop>
+    <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+    <h1>Maze Love Run</h1>
+
+    <div id="game-container">
+        <canvas id="mazeCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="row">
+            <button class="btn" id="btn-up">
+                <svg viewBox="0 0 24 24"><path d="M12 4l-8 8h16z"/></svg>
+            </button>
+        </div>
+        <div class="row">
+            <button class="btn" id="btn-left">
+                <svg viewBox="0 0 24 24"><path d="M4 12l8-8v16z"/></svg>
+            </button>
+            <button class="btn" id="btn-down">
+                <svg viewBox="0 0 24 24"><path d="M12 20l-8-8h16z"/></svg>
+            </button>
+            <button class="btn" id="btn-right">
+                <svg viewBox="0 0 24 24"><path d="M20 12l-8-8v16z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="popup">
+        <div class="popup-content">
+            <h2>Yay Ucare! ❤️</h2>
+            <img src="both.jpeg" alt="together" style="width: 80px; margin: 15px 0;">
+            <p>You Found Me!</p>
+            <button class="restart-btn" onclick="location.href='index.html'">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const popup = document.getElementById('popup');
+
+        // Images
+        const girlImg = new Image();
+        girlImg.src = 'girl.png';
+        
+        const boyImg = new Image();
+        boyImg.src = 'boy.png';
+
+        // Game Configuration
+        const tileSize = 30;
+        const rows = 20;
+        const cols = 20;
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = cols * tileSize;
+            canvas.height = rows * tileSize;
+            draw();
+        }
+
+        // Player Position
+        let player = { x: 1, y: 1 }; 
+        
+        // Goal Position
+        const goal = { x: 13, y: 19 };
+
+        // Maze Map
+        const mazeMap = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+            [1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1],
+            [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+            [1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1],
+            [1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+            [1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ];
+
+        // Initialize
+        let imagesLoaded = 0;
+        function onImageLoad() {
+            imagesLoaded++;
+            if (imagesLoaded === 2) {
+                draw();
+            }
+        }
+        girlImg.onload = onImageLoad;
+        boyImg.onload = onImageLoad;
+        
+        resizeCanvas();
+        setTimeout(draw, 100);
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Maze
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const tile = mazeMap[row][col];
+                    if (tile === 1) {
+                        ctx.fillStyle = '#cc0000';
+                        ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                    } else {
+                        ctx.fillStyle = '#fff0f5'; 
+                        ctx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+
+            // Draw Boy (Goal)
+            if (imagesLoaded >= 2) {
+                ctx.drawImage(boyImg, goal.x * tileSize, goal.y * tileSize, tileSize, tileSize);
+            } else {
+                ctx.fillStyle = '#0066ff';
+                ctx.beginPath();
+                ctx.arc(goal.x * tileSize + tileSize / 2, goal.y * tileSize + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw Girl (Player)
+            if (imagesLoaded >= 2) {
+                ctx.drawImage(girlImg, player.x * tileSize, player.y * tileSize, tileSize, tileSize);
+            } else {
+                ctx.fillStyle = '#ff3366';
+                ctx.beginPath();
+                ctx.arc(player.x * tileSize + tileSize / 2, player.y * tileSize + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function movePlayer(dx, dy) {
+            if (popup.classList.contains('show')) return;
+            
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+
+            if (newX < 0 || newX >= cols || newY < 0 || newY >= rows) return;
+            if (mazeMap[newY][newX] === 1) return;
+
+            player.x = newX;
+            player.y = newY;
+            draw();
+
+            if (player.x === goal.x && player.y === goal.y) {
+                setTimeout(() => {
+                    popup.classList.add('show');
+                    createHeartBurst();
+                }, 100);
+            }
+        }
+
+        // Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            if (popup.classList.contains('show')) return;
+            switch(e.key) {
+                case 'ArrowUp': 
+                    e.preventDefault();
+                    movePlayer(0, -1); 
+                    break;
+                case 'ArrowDown': 
+                    e.preventDefault();
+                    movePlayer(0, 1); 
+                    break;
+                case 'ArrowLeft': 
+                    e.preventDefault();
+                    movePlayer(-1, 0); 
+                    break;
+                case 'ArrowRight': 
+                    e.preventDefault();
+                    movePlayer(1, 0); 
+                    break;
+            }
+        });
+
+        // Button Click Handlers
+        const btnUp = document.getElementById('btn-up');
+        const btnDown = document.getElementById('btn-down');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+
+        btnUp.addEventListener('click', () => movePlayer(0, -1));
+        btnDown.addEventListener('click', () => movePlayer(0, 1));
+        btnLeft.addEventListener('click', () => movePlayer(-1, 0));
+        btnRight.addEventListener('click', () => movePlayer(1, 0));
+
+        // Touch support for better mobile response
+        btnUp.addEventListener('touchend', (e) => { e.preventDefault(); movePlayer(0, -1); });
+        btnDown.addEventListener('touchend', (e) => { e.preventDefault(); movePlayer(0, 1); });
+        btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); movePlayer(-1, 0); });
+        btnRight.addEventListener('touchend', (e) => { e.preventDefault(); movePlayer(1, 0); });
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeCanvas, 100);
+        });
+/* =========================
+   HEARTS BACKGROUND 
+========================= */
+function createHeart() {
+    const heart = document.createElement("div");
+    heart.classList.add("heart");
+    heart.innerHTML = "💝";
+    heart.style.left = Math.random() * 100 + "vw";
+    heart.style.fontSize = 12 + Math.random() * 20 + "px";
+    heart.style.animationDuration = 4 + Math.random() * 4 + "s";
+
+    document.getElementById("hearts").appendChild(heart);
+
+    setTimeout(() => {
+        heart.remove();
+    }, 8000);
+}
+
+setInterval(createHeart, 400);
+    </script>
+</body>
+</html>
